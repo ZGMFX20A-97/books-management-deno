@@ -35,7 +35,7 @@ export default SlackFunction(
     };
   },
 ).addBlockSuggestionHandler(
-  "return_select",
+  "bookTitle_select",
   async ({ client, body, env }) => {
     const userName = await getUserName(client, body.user.id);
 

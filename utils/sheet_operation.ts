@@ -194,4 +194,22 @@ export class SheetClient {
     const requestMsgBlocks = buildRequestMsgBlock(userName, today, url, bookTitle);
     return requestMsgBlocks;
   }
+
+  async updateUserMasterData(userNames: string[][]) {
+    await this.sheets.spreadsheets.values.clear({
+      spreadsheetId: this.spreadsheetId,
+      range: "マスタ!A2:A",
+    });
+    const updateRes = await this.sheets.spreadsheets.values.update({
+      spreadsheetId: this.spreadsheetId,
+      range: "マスタ!A2",
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: userNames,
+      },
+    });
+    console.log(`${userNames.length}件のメンバーを書き込みました`);
+    console.log("APIレスポンス:", JSON.stringify(updateRes.data));
+    console.log(`更新されたセル数: ${updateRes.data.updatedCells}`);
+  }
 }

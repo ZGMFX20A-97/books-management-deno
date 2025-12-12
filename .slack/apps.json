@@ -1,1 +1,10 @@
-{}
+{
+  "apps": {
+    "TLLGVSFU4": {
+      "app_id": "A0A31QE6QCV",
+      "team_domain": "digeon-inc",
+      "team_id": "TLLGVSFU4"
+    }
+  },
+  "default": "digeon-inc"
+}

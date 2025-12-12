@@ -4,7 +4,7 @@ import PurchaseRequestWorkflow from "../workflows/purchase_request_workflow.ts";
 
 const PurchaseRequestTrigger: Trigger<typeof PurchaseRequestWorkflow.definition> = {
   type: TriggerTypes.Shortcut,
-  name: "/pr",
+  name: "/request",
   description: "書籍の購入を申請",
   workflow: `#/workflows/${PurchaseRequestWorkflow.definition.callback_id}`,
   inputs: {

@@ -40,12 +40,6 @@ export default SlackFunction(
   const url = formData.url_select;
   const price = formData.price_select;
   const purchaseMethod = formData.purchaseMethod_select;
-  // const bookTitle = view.state.values.book_block.book_select.value as string;
-  // const publisher = view.state.values.publisher_block.publisher_select.value as string;
-  // const url = view.state.values.url_block.url_select.value as string;
-  // const price = view.state.values.price_block.price_input.value as string;
-  // const purchaseMethod = view.state.values.purchase_method_block.purchase_method_select
-  //   .selected_option.text.text as string;
   const userName = await getUserName(client, body.user.id);
 
   let msgBlocks;

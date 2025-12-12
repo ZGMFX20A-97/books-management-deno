@@ -35,7 +35,7 @@ export default SlackFunction(
     };
   },
 ).addBlockSuggestionHandler(
-  "borrow_select",
+  "bookTitle_select",
   async ({ body, env }) => {
     const keyword = body.value;
     const Bot = new SheetClient(env);

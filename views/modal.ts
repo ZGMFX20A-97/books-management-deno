@@ -74,7 +74,7 @@ export const returnModal = {
       },
       "element": {
         "type": "external_select",
-        "action_id": "BookTitle_select",
+        "action_id": "bookTitle_select",
         "placeholder": {
           "type": "plain_text",
           "text": "クリックして候補を見る",

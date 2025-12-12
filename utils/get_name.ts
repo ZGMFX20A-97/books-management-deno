@@ -1,3 +1,5 @@
+import { SlackAPIClient } from "deno-slack-api/types.ts";
+
 export function extractName(displayName: string): string {
   if (!displayName) return "名無し";
 
@@ -11,7 +13,6 @@ export function extractName(displayName: string): string {
 
   return hasKanji ? last : displayName;
 }
-import { SlackAPIClient } from "deno-slack-api/types.ts";
 
 /**
  * ユーザーIDからSlack APIを叩いて表示名を取得・整形する関数
@@ -31,6 +32,44 @@ export async function getUserName(client: SlackAPIClient, userId: string): Promi
   // (表示名を設定していない人がいる場合の対策)
   const rawName = profile?.display_name || profile?.real_name || "名無し";
 
-  // 3. 名前の整形処理 (旧 extractName のロジックをここに書く)
+  // 3. 名前の整形処理
   return extractName(rawName);
+}
+
+export async function fetchUserNameMap(
+  client: SlackAPIClient,
+  teamId: string,
+): Promise<Record<string, string>> {
+  const userMap: Record<string, string> = {};
+
+  try {
+    // users.list は標準で「最大1000人」まで取得可能
+    const response = await client.users.list({ limit: 1000, team_id: teamId });
+
+    if (!response.ok) {
+      console.error(`users.list error: ${response.error}`);
+      return {};
+    }
+
+    const members = response.members || [];
+    console.log(members);
+
+    // 取得した全メンバーをループして Map を作る
+    for (const member of members) {
+      // Bot や 削除済みユーザーを除外
+      if (!member.id || member.is_bot || member.deleted || member.id === "USLACKBOT") continue;
+
+      const profile = member.profile;
+
+      const rawName = profile?.display_name || profile?.real_name || "名無し";
+
+      // Mapに保存 (整形処理してから)
+      userMap[member.id] = extractName(rawName);
+    }
+
+    return userMap;
+  } catch (error) {
+    console.error(error);
+    return {};
+  }
 }

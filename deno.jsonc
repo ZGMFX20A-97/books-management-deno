@@ -39,7 +39,6 @@
     "@std/testing": "jsr:@std/testing@^1.0.16",
     "deno-slack-sdk/": "https://deno.land/x/deno_slack_sdk@2.15.1/",
     "deno-slack-api/": "https://deno.land/x/deno_slack_api@2.8.0/",
-    "googleapis": "npm:googleapis@126.0.1",
-    "google-auth-library": "npm:google-auth-library@9.0.0"
+    "googleapis": "https://esm.sh/googleapis@126.0.1?target=deno"
   }
 }

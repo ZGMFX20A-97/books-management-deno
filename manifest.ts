@@ -9,10 +9,12 @@ import { ShelveFunction } from "./functions/shelve_function.ts";
 import ShelveWorkflow from "./workflows/shelve_workflow.ts";
 import PurchaseRequestWorkflow from "./workflows/purchase_request_workflow.ts";
 import { PurchaseRequestFunction } from "./functions/purchase_request_function.ts";
+import MasterDataWorkflow from "./workflows/master_data_workflow.ts";
+import { MasterDataFunction } from "./functions/master_data_function.ts";
 
 export default Manifest({
-  name: "slack-app",
-  description: "図書管理ボット",
+  name: "LibraryBot",
+  description: "書籍管理ボット",
   icon: "assets/icon.png",
   workflows: [
     BorrowWorkflow,
@@ -20,6 +22,7 @@ export default Manifest({
     RemindWorkflow,
     ShelveWorkflow,
     PurchaseRequestWorkflow,
+    MasterDataWorkflow,
   ],
   functions: [
     BorrowFunction,
@@ -27,6 +30,7 @@ export default Manifest({
     RemindFunction,
     ShelveFunction,
     PurchaseRequestFunction,
+    MasterDataFunction,
   ],
   outgoingDomains: [
     "www.googleapis.com",
@@ -41,5 +45,8 @@ export default Manifest({
     "datastore:read",
     "datastore:write",
     "users:read",
+    "channels:read",
+    "groups:read",
+    "im:read",
   ],
 });
