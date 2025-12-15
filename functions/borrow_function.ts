@@ -1,9 +1,9 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { getUserName } from "../utils/get_name.ts";
 import { borrowModal } from "../views/modal.ts";
-import { SheetClient } from "../utils/sheet_operation.ts";
 import { compareDate } from "../utils/compare_date.ts";
 import { extractFormValues } from "../utils/extract_form_values.ts";
+import { borrowBook, getAvailableBooks } from "../utils/sheet.ts";
 
 export const BorrowFunction = DefineFunction({
   callback_id: "borrow_function",
@@ -38,9 +38,11 @@ export default SlackFunction(
   "bookTitle_select",
   async ({ body, env }) => {
     const keyword = body.value;
-    const Bot = new SheetClient(env);
 
-    const availableBooks = await Bot.getAvailableBooks(keyword);
+    const availableBooks = await getAvailableBooks(
+      env,
+      keyword,
+    );
 
     const opts = {
       "options": availableBooks.map((book) => ({
@@ -65,8 +67,12 @@ export default SlackFunction(
 
   let msgBlocks;
   try {
-    const Bot = new SheetClient(env);
-    msgBlocks = await Bot.borrowBook(bookTitle, userName, date);
+    msgBlocks = await borrowBook(
+      env,
+      bookTitle,
+      userName,
+      date,
+    );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { response_actions: "errors", error: `貸出処理エラー: ${errorMessage}` };

@@ -36,6 +36,8 @@ export default Manifest({
     "www.googleapis.com",
     "oauth2.googleapis.com",
     "sheets.googleapis.com",
+    "script.google.com",
+    "script.googleusercontent.com",
   ],
   datastores: [],
   botScopes: [

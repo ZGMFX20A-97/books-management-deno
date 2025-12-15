@@ -9,7 +9,7 @@ const RemindTrigger: Trigger<typeof RemindWorkflow.definition> = {
   workflow: `#/workflows/${RemindWorkflow.definition.callback_id}`,
   schedule: {
     // 最初の実行日時(UTC)
-    start_time: "2025-12-12T05:38:00Z",
+    start_time: "2025-12-16T01:00:00Z",
     frequency: {
       type: "daily",
     },

@@ -1,17 +1,12 @@
 import { SlackAPIClient } from "deno-slack-api/types.ts";
+import { Env } from "deno-slack-sdk/types.ts";
 
 export function extractName(displayName: string): string {
-  if (!displayName) return "名無し";
-
-  const parts = displayName.trim().split(/\s+/);
-  if (parts.length === 0) return "名無し";
-
-  const last = parts[parts.length - 1];
-
-  // 「漢字を含むか」をざっくり判定
-  const hasKanji = /[\u4E00-\u9FFF]/.test(last);
-
-  return hasKanji ? last : displayName;
+  if (!displayName) return "";
+  return displayName
+    .replace(/[a-zA-Z]/g, "") // 1. アルファベットを除去
+    .replace(/[\s　]/g, "") // 2. あらゆる空白（半角・全角・改行）を除去
+    .trim(); // 3. ゴミ取り
 }
 
 /**
@@ -36,40 +31,59 @@ export async function getUserName(client: SlackAPIClient, userId: string): Promi
   return extractName(rawName);
 }
 
-export async function fetchUserNameMap(
+export async function fetchActiveMembers(
+  env: Env,
   client: SlackAPIClient,
-  teamId: string,
-): Promise<Record<string, string>> {
-  const userMap: Record<string, string> = {};
-
+): Promise<string[][]> {
   try {
     // users.list は標準で「最大1000人」まで取得可能
-    const response = await client.users.list({ limit: 1000, team_id: teamId });
-
+    const response = await client.conversations.members({
+      channel: env["CHANNEL_FOR_GET_MEMBERS"],
+      limit: 1000,
+    });
     if (!response.ok) {
       console.error(`users.list error: ${response.error}`);
-      return {};
+      return [];
+    }
+    let activeMembers: string[][] = [];
+    // 検索を高速化するために Set に変換 ("U111" があるか？を即座に判定できる)
+    const channelMemberIds = new Set(response.members || []);
+
+    // 2. ワークスペースの全ユーザー情報を取得 (ここで display_name や is_bot が取れる)
+    const usersRes = await client.users.list({
+      limit: 1000,
+    });
+
+    if (!usersRes.ok) {
+      console.error(`users.list error: ${usersRes.error}`);
+      return [];
     }
 
-    const members = response.members || [];
-    console.log(members);
+    const allUsers = usersRes.members || [];
 
-    // 取得した全メンバーをループして Map を作る
-    for (const member of members) {
-      // Bot や 削除済みユーザーを除外
-      if (!member.id || member.is_bot || member.deleted || member.id === "USLACKBOT") continue;
+    // 3. 全ユーザーの中から「指定チャンネルにいる」かつ「有効な人間」を抽出
+    for (const user of allUsers) {
+      // (A) そのユーザーIDが、チャンネルのメンバーリストに含まれているか確認
+      if (!user.id || !channelMemberIds.has(user.id)) continue;
 
-      const profile = member.profile;
+      // (B) Bot や 削除済み、Slack公式Bot を除外
+      if (user.is_bot || user.deleted || user.id === "USLACKBOT") continue;
 
+      // プロフィール取得
+      const profile = user.profile;
       const rawName = profile?.display_name || profile?.real_name || "名無し";
+      const cleanName = extractName(rawName);
 
-      // Mapに保存 (整形処理してから)
-      userMap[member.id] = extractName(rawName);
+      // 名前が取れた場合のみ追加
+      if (cleanName) {
+        activeMembers.push([cleanName, user.id]);
+      }
     }
+    console.log(activeMembers);
 
-    return userMap;
+    return activeMembers;
   } catch (error) {
     console.error(error);
-    return {};
+    return [];
   }
 }

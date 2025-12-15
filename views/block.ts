@@ -1,7 +1,7 @@
 export function buildBorrowMsgBlock(
   bookTitle: string,
-  userName: string,
-  today: string,
+  userId: string,
+  borrowedDate: string,
   returnDate: string,
 ) {
   const msgBlock = [
@@ -25,11 +25,11 @@ export function buildBorrowMsgBlock(
         },
         {
           type: "mrkdwn",
-          text: `*借りた人:*\n${userName}`, // user_idをメンション形式にする
+          text: `*借りた人:*\n<@${userId}>`, // user_idをメンション形式にする
         },
         {
           type: "mrkdwn",
-          text: `*貸出日:*\n${today}`, // user_idをメンション形式にする
+          text: `*貸出日:*\n${borrowedDate}`, // user_idをメンション形式にする
         },
         {
           type: "mrkdwn",
@@ -49,13 +49,13 @@ export function buildBorrowMsgBlock(
   ];
   return msgBlock;
 }
-export function buildReturnMsgBlock(bookTitle: string, userName: string, today: string) {
+export function buildReturnMsgBlock(bookTitle: string, userId: string, returnedDate: string) {
   const msgBlock = [
     {
       type: "header",
       text: {
         type: "plain_text",
-        text: "📚 書籍が返却されました",
+        text: "🔙 書籍が返却されました",
         emoji: true,
       },
     },
@@ -71,11 +71,11 @@ export function buildReturnMsgBlock(bookTitle: string, userName: string, today: 
         },
         {
           type: "mrkdwn",
-          text: `*返した人:*\n${userName}`, // user_idをメンション形式にする
+          text: `*返した人:*\n<@${userId}>`, // user_idをメンション形式にする
         },
         {
           type: "mrkdwn",
-          text: `*返却日:*\n${today}`,
+          text: `*返却日:*\n${returnedDate}`,
         },
       ],
     },
@@ -98,7 +98,7 @@ export function buildShelveMsgBlock(bookTitle: string, today: string) {
       type: "header",
       text: {
         type: "plain_text",
-        text: "📚 書籍が配架されました",
+        text: "📖 書籍が配架されました",
         emoji: true,
       },
     },
@@ -122,33 +122,37 @@ export function buildShelveMsgBlock(bookTitle: string, today: string) {
   return msgBlock;
 }
 export function buildRequestMsgBlock(
-  userName: string,
-  today: string,
+  userId: string,
+  requestedDate: string,
   url: string,
   bookTitle: string,
 ) {
   const msgBlock = [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "書籍の購入申請が入りました:",
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: "🈸 書籍の購入が申請されました",
+        emoji: true,
       },
     },
     {
-      "type": "section",
-      "fields": [
+      type: "divider",
+    },
+    {
+      type: "section",
+      fields: [
         {
-          "type": "mrkdwn",
-          "text": `*申請者:*\n${userName}`,
+          type: "mrkdwn",
+          text: `*書籍名:*\n<${url}|${bookTitle}>`,
         },
         {
-          "type": "mrkdwn",
-          "text": `*申請日:*\n${today}`,
+          type: "mrkdwn",
+          text: `*申請者:*\n<@${userId}>`, // user_idをメンション形式にする
         },
         {
-          "type": "mrkdwn",
-          "text": `*書籍:*\n*<${url}|${bookTitle}>*`,
+          type: "mrkdwn",
+          text: `*申請日:*\n${requestedDate}`,
         },
       ],
     },

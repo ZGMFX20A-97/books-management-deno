@@ -1,7 +1,7 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { shelveModal } from "../views/modal.ts";
-import { SheetClient } from "../utils/sheet_operation.ts";
 import { extractFormValues } from "../utils/extract_form_values.ts";
+import { shelve } from "../utils/sheet.ts";
 
 export const ShelveFunction = DefineFunction({
   callback_id: "shelve_function",
@@ -41,8 +41,7 @@ export default SlackFunction(
 
   let msgBlocks;
   try {
-    const Bot = new SheetClient(env);
-    msgBlocks = await Bot.shelve(publisher, bookTitle, url);
+    msgBlocks = await shelve(env, publisher, bookTitle, url);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { response_actions: "errors", error: `配架処理エラー: ${errorMessage}` };

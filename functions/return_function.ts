@@ -1,8 +1,8 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { getUserName } from "../utils/get_name.ts";
 import { returnModal } from "../views/modal.ts";
-import { SheetClient } from "../utils/sheet_operation.ts";
 import { extractFormValues } from "../utils/extract_form_values.ts";
+import { getMyBooks, returnBook } from "../utils/sheet.ts";
 
 export const ReturnFunction = DefineFunction({
   callback_id: "return_function",
@@ -38,12 +38,10 @@ export default SlackFunction(
   "bookTitle_select",
   async ({ client, body, env }) => {
     const userName = await getUserName(client, body.user.id);
-
-    const Bot = new SheetClient(env);
-    const availableBooks = await Bot.getMyBooks(userName);
+    const books = await getMyBooks(env, userName);
 
     const opts = {
-      "options": availableBooks.map((book) => ({
+      "options": books.map((book) => ({
         value: `${book}`,
         text: { type: "plain_text" as const, text: book },
       })),
@@ -57,8 +55,7 @@ export default SlackFunction(
 
   let msgBlocks;
   try {
-    const Bot = new SheetClient(env);
-    msgBlocks = await Bot.returnBook(bookTitle, userName);
+    msgBlocks = await returnBook(env, bookTitle, userName);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { response_actions: "errors", error: `返却処理エラー: ${errorMessage}` };

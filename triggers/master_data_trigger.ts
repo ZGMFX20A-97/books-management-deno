@@ -9,7 +9,7 @@ const MasterDataTrigger: Trigger<typeof MasterDataWorkflow.definition> = {
   workflow: `#/workflows/${MasterDataWorkflow.definition.callback_id}`,
   schedule: {
     // 最初の実行日時(UTC)
-    start_time: "2025-12-12T05:38:00Z",
+    start_time: "2025-12-15T15:00:00Z",
     frequency: {
       type: "daily",
     },

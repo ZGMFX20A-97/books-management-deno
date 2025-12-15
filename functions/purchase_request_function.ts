@@ -1,8 +1,8 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { getUserName } from "../utils/get_name.ts";
 import { purchaseRequestModal } from "../views/modal.ts";
-import { SheetClient } from "../utils/sheet_operation.ts";
 import { extractFormValues } from "../utils/extract_form_values.ts";
+import { request } from "../utils/sheet.ts";
 
 export const PurchaseRequestFunction = DefineFunction({
   callback_id: "purchase_request_function",
@@ -45,8 +45,7 @@ export default SlackFunction(
   let msgBlocks;
 
   try {
-    const Bot = new SheetClient(env);
-    msgBlocks = await Bot.request(userName, publisher, bookTitle, price, purchaseMethod, url);
+    msgBlocks = await request(env, userName, publisher, bookTitle, price, purchaseMethod, url);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { response_actions: "errors", error: `申請処理エラー: ${errorMessage}` };

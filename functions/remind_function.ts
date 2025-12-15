@@ -1,5 +1,5 @@
 import { DefineFunction, SlackFunction } from "deno-slack-sdk/mod.ts";
-import { SheetClient } from "../utils/sheet_operation.ts";
+import { checkDueDate } from "../utils/sheet.ts";
 
 // ファンクションの定義
 export const RemindFunction = DefineFunction({
@@ -9,25 +9,23 @@ export const RemindFunction = DefineFunction({
 });
 
 export default SlackFunction(RemindFunction, async ({ client, env }) => {
-  const Bot = new SheetClient(env); // 環境変数からシートID取得
-
-  const remindTargets = await Bot.checkDueDate();
+  const reminderTargets = await checkDueDate(env);
 
   console.log("Checking due date...");
 
-  if (remindTargets.length === 0) {
+  if (reminderTargets.length === 0) {
     console.log("リマインド対象はありませんでした。");
     return { outputs: {}, completed: true };
   }
   let response;
   // 4. 対象者に通知を送る
-  for (const target of remindTargets) {
+  for (const target of reminderTargets) {
     const message =
-      `🚨 ${target.user} さん\n書籍『${target.bookTitle}』の返却期限が3日後に迫っています。\n返却の準備をお願いします！`;
+      `🚨 <@${target.userId}> さん\n書籍 *『${target.bookTitle}』* の返却期限になりました。\n返却をお願いします！`;
 
     response = await client.chat.postMessage({
       channel: env["CHANNEL_ID"],
-      text: message, // メンション付きテキスト
+      text: message,
     });
 
     if (!response.ok) {
