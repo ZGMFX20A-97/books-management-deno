@@ -1,194 +1,138 @@
-# Blank Template
+# LibraryBot (書籍管理ボット)
 
-This is a blank template used to build out automations using the Slack CLI.
+社内ライブラリの書籍管理を行うSlackアプリです。
+Slackの次世代プラットフォーム（Deno）で構築されており、バックエンド（データベース）としてGoogle Apps Script (GAS) と Google Sheetsを利用しています。
 
-**Guide Outline**:
+## 機能概要
 
-- [Setup](#setup)
-  - [Install the Slack CLI](#install-the-slack-cli)
-  - [Clone the Template](#clone-the-template)
-- [Running Your Project Locally](#running-your-project-locally)
-- [Creating Triggers](#creating-triggers)
-- [Datastores](#datastores)
-- [Testing](#testing)
-- [Deploying Your App](#deploying-your-app)
-- [Viewing Activity Logs](#viewing-activity-logs)
-- [Project Structure](#project-structure)
-- [Resources](#resources)
+*   **書籍の貸出 (Borrow):** `/borrow` 書籍を検索し、貸出処理を行います。
+*   **書籍の返却 (Return):** `/return` 借りている書籍を返却します。
+*   **購入リクエスト (Purchase Request):** `/request` 新しい書籍の購入を依頼します。
+*   **蔵書登録 (Shelve):** `/shelve` 新しい書籍を管理シートに登録します。
+*   **リマインド (Remind):** 返却期限のリマインドを行います。
+*   **マスタデータ更新 (Master Data):** ユーザー情報の更新などを行います。
 
----
+## 構成図
+```mermaid
+graph LR
+    subgraph "Slack App (Deno)"
+        T[Trigger] -->|起動| W[Workflow]
+        W -->|実行| F[Functions]
+    end
+    F -- POST --> GAS["Google Apps Script (Web App)"]
+    GAS -- Response --> F
+    GAS -- CRUD --> S["Google Spreadsheet"]
+```
+## セットアップ手順
 
-## Setup
+### 1. 前提条件
 
-Before getting started, first make sure you have a development workspace where
-you have permission to install apps. **Please note that the features in this
-project require that the workspace be part of
-[a Slack paid plan](https://slack.com/pricing).**
+*   Slack CLI がインストールされていること (`curl -fsSL https://downloads.slack-edge.com/slack-cli/install.sh | bash` )
+*   Deno がインストールされていること (`curl -fsSL https://deno.land/install.sh | sh`)
+*   Slack ワークスペースへのアプリインストール権限があること
+*   バックエンドとなる Google Apps Script (GAS) がデプロイされており、その Web App URL が取得済みであること
 
-### Install the Slack CLI
+    **取得手順**: 管理シート→拡張機能タブ→Apps Scriptを開く→デプロイ→新しいデプロイorデプロイを管理→ウェブアプリURL
 
-To use this template, you need to install and configure the Slack CLI.
-Step-by-step instructions can be found in our
-[Quickstart Guide](https://api.slack.com/automation/quickstart).
 
-### Clone the Template
+### 2. Slack CLIの認証
 
-Start by cloning this repository:
+Slack CLI を使用するために、Slack ワークスペースへの認証が必要です。以下のコマンドを実行してください。
 
-```zsh
-# Clone this project onto your machine
-$ slack create my-app -t slack-samples/deno-blank-template
+```bash
+slack login
+```
+```bash
+$ slack login
 
-# Change into the project directory
-$ cd my-app
+📋 Run the following slash command in any Slack channel or DM
+   This will open a modal with user permissions for you to approve
+   Once approved, a challenge code will be generated in Slack
+
+/slackauthticket ABC123defABC123defABC123defABC123defXYZ  // このコマンドをワークスペースの任意チャンネルで送信。開発時はSandboxのワークスペースを使用。
+
+? Enter challenge code
+```
+```bash
+? Enter challenge code eXaMpLeCoDe // チャンネルで返してくれたコードを入力
+
+✅ You've successfully authenticated! 🎉
+   Authorization data was saved to ~/.slack/credentials.json
+
+💡 Get started by creating a new app with slack create my-app
+   Explore the details of available commands with slack help
+```
+### 3. プロジェクトの準備
+
+```bash
+# 依存関係の解決
+slack doctor
 ```
 
-## Running Your Project Locally
 
-While building your app, you can see your changes appear in your workspace in
-real-time with `slack run`. You'll know an app is the development version if the
-name has the string `(local)` appended.
+### 4. 環境変数の設定
 
-```zsh
-# Run app locally
-$ slack run
+Google Apps Script のウェブアプリ URL を環境変数 `GAS_URL` として設定する必要があります。
 
-Connected, awaiting events
+```bash
+slack env add GAS_URL https://script.google.com/macros/s/xxxxxxxxx/exec
+slack env add CHANNEL_ID {メッセージをプッシュしたいチャンネルID}
+slack env add CHANNEL_FOR_GET_MEMBERS {利用者を取得するためのチャンネルID}(CHANNEL_IDに利用者全員が入っていればCHANNEL_IDを流用)
 ```
 
-To stop running locally, press `<CTRL> + C` to end the process.
+### 5. アプリのデプロイ
 
-## Creating Triggers
-
-[Triggers](https://api.slack.com/automation/triggers) are what cause workflows
-to run. These triggers can be invoked by a user, or automatically as a response
-to an event within Slack.
-
-When you `run` or `deploy` your project for the first time, the CLI will prompt
-you to create a trigger if one is found in the `triggers/` directory. For any
-subsequent triggers added to the application, each must be
-[manually added using the `trigger create` command](#manual-trigger-creation).
-
-When creating triggers, you must select the workspace and environment that you'd
-like to create the trigger in. Each workspace can have a local development
-version (denoted by `(local)`), as well as a deployed version. _Triggers created
-in a local environment will only be available to use when running the
-application locally._
-
-### Link Triggers
-
-A [link trigger](https://api.slack.com/automation/triggers/link) is a type of
-trigger that generates a **Shortcut URL** which, when posted in a channel or
-added as a bookmark, becomes a link. When clicked, the link trigger will run the
-associated workflow.
-
-Link triggers are _unique to each installed version of your app_. This means
-that Shortcut URLs will be different across each workspace, as well as between
-[locally run](#running-your-project-locally) and
-[deployed apps](#deploying-your-app).
-
-With link triggers, after selecting a workspace and environment, the output
-provided will include a Shortcut URL. Copy and paste this URL into a channel as
-a message, or add it as a bookmark in a channel of the workspace you selected.
-Interacting with this link will run the associated workflow.
-
-**Note: triggers won't run the workflow unless the app is either running locally
-or deployed!**
-
-### Manual Trigger Creation
-
-To manually create a trigger, use the following command:
-
-```zsh
-$ slack trigger create --trigger-def triggers/<YOUR_TRIGGER_FILE>.ts
+```bash
+slack deploy
 ```
 
-## Datastores
+### 6. トリガーの作成
 
-For storing data related to your app, datastores offer secure storage on Slack
-infrastructure. The use of a datastore requires the
-`datastore:write`/`datastore:read` scopes to be present in your manifest.
+各機能を利用するためのトリガー（ショートカット等）を作成します。以下のコマンドを実行してください。
 
-## Testing
-
-Test filenames should be suffixed with `_test`.
-
-Run all tests with `deno test`:
-
-```zsh
-$ deno test
+```bash
+slack trigger create --trigger-def "./triggers/borrow_trigger.ts"
+slack trigger create --trigger-def "./triggers/return_trigger.ts"
+slack trigger create --trigger-def "./triggers/purchase_request_trigger.ts"
+slack trigger create --trigger-def "./triggers/shelve_trigger.ts"
+slack trigger create --trigger-def "./triggers/remind_trigger.ts"
+slack trigger create --trigger-def "./triggers/master_data_trigger.ts"
 ```
 
-## Deploying Your App
+コマンド実行後に表示されるショートカットURLをSlackのブックマーク等に登録して利用できます。
 
-Once development is complete, deploy the app to Slack infrastructure using
-`slack deploy`:
+## ローカル開発
 
-```zsh
-$ slack deploy
+ローカルで動作確認を行う場合は以下のコマンドを実行します。
+
+```bash
+slack run
 ```
 
-When deploying for the first time, you'll be prompted to
-[create a new link trigger](#creating-triggers) for the deployed version of your
-app. When that trigger is invoked, the workflow should run just as it did when
-developing locally (but without requiring your server to be running).
+注意: ローカル実行時用の環境変数設定が必要な場合は、`.env` ファイルを作成するか、`slack env add` でローカル環境 (`slack env add GAS_URL ...`) にも変数を設定してください。(どちらでも良いです)
 
-## Viewing Activity Logs
+## Q&A
 
-Activity logs of your application can be viewed live and as they occur with the
-following command:
+##### Q: なぜdeno Slack SDKを採用したのか
+A: *主にslack次世代プラットフォーム(slack公式のマネージドホスティングサービス)を利用するためです。このプラットフォームは現在`deno Slack SDK`で作成したアプリしかサポートしていません。これを利用することで、アプリのホスティングやデプロイを簡素化できます。*
 
-```zsh
-$ slack activity --tail
-```
+##### Q: なぜDataStoreを使わなかったのか
+A: *使ってもいいものですが、現存のシートもそのまま運用したいという観点で、DataStoreではなくGoogle SheetをDB代わりに使いました。また、DataStoreをシートのレプリカとして使おうかとも思いましたが、複雑性が増すほか費用対効果も低いため採用しませんでした。*
 
-## Project Structure
+##### Q: なぜGoogle Sheetの処理をアプリ内ではなく、AppsScriptに移行したのか
+A: *最初は`googleapis`というライブラリを使用しました。が、`googleapis`は真っ先に.envファイルを読み込む特性を持ちます。*
+*denoアプリを実行する際に`--allow-env`オプションを指定しない限り、環境変数を有効化できません。*
+*slackのマネージド環境は素の`deno run` コマンドでアプリを起動しているため、ライブラリは環境変数を読め込めず起動が一生失敗します。*
+*よって、シート操作処理をApps Scriptへ移行し、アプリはそのAPIを呼び出す形にしました。*
 
-### `.slack/`
+##### Q: アプリをワークスペースにインストールする際に、どの権限を必要としますか？
+A: *アプリをワークスペースにインストールする際には、アプリに以下の権限が必要です。*
+   - *`chat:write`：ボットがチャンネルにメッセージを投稿するための権限*
+   - *`commands`：ボットが `/borrow`, `/return`, `/request`, `/shelve`, `/remind`, `/masterdata` コマンドを認識するための権限*
+   - *`users:read`：ボットがユーザー情報を取得するための権限*
+   - *`channels:read`：ボットがチャンネル情報を取得するための権限*
 
-Contains `apps.dev.json` and `apps.json`, which include installation details for
-development and deployed apps.
-
-Contains `hooks.json` used by the CLI to interact with the project's SDK
-dependencies. It contains script hooks that are executed by the CLI and
-implemented by the SDK.
-
-### `datastores/`
-
-[Datastores](https://api.slack.com/automation/datastores) securely store data
-for your application on Slack infrastructure. Required scopes to use datastores
-include `datastore:write` and `datastore:read`.
-
-### `functions/`
-
-[Functions](https://api.slack.com/automation/functions) are reusable building
-blocks of automation that accept inputs, perform calculations, and provide
-outputs. Functions can be used independently or as steps in workflows.
-
-### `triggers/`
-
-[Triggers](https://api.slack.com/automation/triggers) determine when workflows
-are run. A trigger file describes the scenario in which a workflow should be
-run, such as a user pressing a button or when a specific event occurs.
-
-### `workflows/`
-
-A [workflow](https://api.slack.com/automation/workflows) is a set of steps
-(functions) that are executed in order.
-
-Workflows can be configured to run without user input or they can collect input
-by beginning with a [form](https://api.slack.com/automation/forms) before
-continuing to the next step.
-
-### `manifest.ts`
-
-The [app manifest](https://api.slack.com/automation/manifest) contains the app's
-configuration. This file defines attributes like app name and description.
-
-## Resources
-
-To learn more about developing automations on Slack, visit the following:
-
-- [Automation Overview](https://api.slack.com/automation)
-- [CLI Quick Reference](https://api.slack.com/automation/cli/quick-reference)
-- [Samples and Templates](https://api.slack.com/automation/samples)
+##### Q: シートの仕様やレイアウト変更に対するロバスト性はあるのか？
+A: *ほぼ皆無です。*
+*Google SheetでCRUD操作を実現するために、泥臭く1行1列を絞り込んだり、検索・更新・削除・追加したりしています。*
+*シートの仕様やレイアウト変更が発生した場合、正常動作のためにAppsScript側での大量修正が必要になります。*

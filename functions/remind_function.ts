@@ -9,6 +9,7 @@ export const RemindFunction = DefineFunction({
 });
 
 export default SlackFunction(RemindFunction, async ({ client, env }) => {
+  // 返却リマインド対象をチェック
   const reminderTargets = await checkDueDate(env);
 
   console.log("Checking due date...");
@@ -18,7 +19,7 @@ export default SlackFunction(RemindFunction, async ({ client, env }) => {
     return { outputs: {}, completed: true };
   }
   let response;
-  // 4. 対象者に通知を送る
+  // 対象者に通知を送る
   for (const target of reminderTargets) {
     const message =
       `🚨 <@${target.userId}> さん\n書籍 *『${target.bookTitle}』* の返却期限になりました。\n返却をお願いします！`;

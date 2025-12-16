@@ -13,6 +13,7 @@ export async function borrowBook(
   selectedDate: string,
 ) {
   const returnDate = selectedDate.replaceAll("-", "/");
+  // 処理の詳細はAppsScriptの中身を参照
   const response = await fetch(env["GAS_URL"], {
     method: "POST",
     headers: { "Content-Type": "application/json" },

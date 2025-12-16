@@ -19,6 +19,7 @@ export const ShelveFunction = DefineFunction({
 export default SlackFunction(
   ShelveFunction,
   async ({ inputs, client }) => {
+    // モーダルを開く
     const response = await client.views.open({
       interactivity_pointer: inputs.interactivity.interactivity_pointer,
       view: shelveModal,
@@ -29,11 +30,13 @@ export default SlackFunction(
         `Failed to open a modal in the demo workflow. Contact the app maintainers with the following information - (error: ${response.error})`;
       return { error };
     }
+    // モーダルが開く状態を保持するため、completedはfalse
     return {
       completed: false,
     };
   },
 ).addViewSubmissionHandler("shelve_modal", async ({ view, env, client, body }) => {
+  // モーダルの入力値を取得
   const formData = extractFormValues(view.state.values);
   const publisher = formData.publisher_select;
   const bookTitle = formData.bookTitle_select;
@@ -41,6 +44,7 @@ export default SlackFunction(
 
   let msgBlocks;
   try {
+    // 配架を処理
     msgBlocks = await shelve(env, publisher, bookTitle, url);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -57,6 +61,7 @@ export default SlackFunction(
     return { error: `Failed to post message: ${response.error}` };
   }
 
+  // 関数の完了を通知
   await client.functions.completeSuccess({
     function_execution_id: body.function_data.execution_id,
     outputs: {},

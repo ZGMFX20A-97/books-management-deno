@@ -12,6 +12,7 @@ export const MasterDataFunction = DefineFunction({
 export default SlackFunction(MasterDataFunction, async ({ client, env }) => {
   console.log("Updating members master data...");
   try {
+    // チャンネルメンバーを取得
     const activeMembers = await fetchActiveMembers(env, client);
     console.log(`取得したメンバー数: ${activeMembers.length}`);
 
@@ -26,6 +27,7 @@ export default SlackFunction(MasterDataFunction, async ({ client, env }) => {
       };
     }
 
+    // ユーザーマスタデータを更新
     await updateUserMasterData(env, activeMembers);
   } catch (error) {
     console.error(`Error fetching channel members: ${error}`);
@@ -34,6 +36,6 @@ export default SlackFunction(MasterDataFunction, async ({ client, env }) => {
       completed: true,
     };
   }
-
+  // 関数の完了を通知
   return { outputs: {}, completed: true };
 });

@@ -20,6 +20,7 @@ export const ReturnFunction = DefineFunction({
 export default SlackFunction(
   ReturnFunction,
   async ({ inputs, client }) => {
+    // モーダルを開く
     const response = await client.views.open({
       interactivity_pointer: inputs.interactivity.interactivity_pointer,
       view: returnModal,
@@ -29,15 +30,17 @@ export default SlackFunction(
         `Failed to open a modal in the demo workflow. Contact the app maintainers with the following information - (error: ${response.error})`;
       return { error };
     }
+    // モーダルが開く状態を保持するため、completedはfalse
     return {
-      // To continue with this interaction, return false for the completion
       completed: false,
     };
   },
 ).addBlockSuggestionHandler(
   "bookTitle_select",
   async ({ client, body, env }) => {
+    // 整形されたユーザー名を取得
     const userName = await getUserName(client, body.user.id);
+    // ユーザーが借りている書籍を取得
     const books = await getMyBooks(env, userName);
 
     const opts = {
@@ -49,12 +52,14 @@ export default SlackFunction(
     return opts;
   },
 ).addViewSubmissionHandler("return_modal", async ({ view, env, client, body }) => {
+  // モーダルの入力値を取得
   const formData = extractFormValues(view.state.values);
   const bookTitle = formData.bookTitle_select;
   const userName = await getUserName(client, body.user.id);
 
   let msgBlocks;
   try {
+    // 書籍を返却する処理
     msgBlocks = await returnBook(env, bookTitle, userName);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -70,6 +75,7 @@ export default SlackFunction(
   if (!response.ok) {
     return { error: `Failed to post message: ${response.error}` };
   }
+  // 関数の完了を通知
   await client.functions.completeSuccess({
     function_execution_id: body.function_data.execution_id,
     outputs: {},

@@ -13,7 +13,7 @@ export function extractName(displayName: string): string {
  * ユーザーIDからSlack APIを叩いて表示名を取得・整形する関数
  */
 export async function getUserName(client: SlackAPIClient, userId: string): Promise<string> {
-  // 1. APIで情報を取得
+  // 1. APIでユーザーの詳細情報を取得
   const response = await client.users.info({ user: userId });
 
   if (!response.ok) {
@@ -36,7 +36,8 @@ export async function fetchActiveMembers(
   client: SlackAPIClient,
 ): Promise<string[][]> {
   try {
-    // users.list は標準で「最大1000人」まで取得可能
+    // メンバーのユーザーIDを取得、IDの配列が帰ってくる
+    // client.conversations.membersはボットユーザーや解除済みユーザーの区別がつかない
     const response = await client.conversations.members({
       channel: env["CHANNEL_FOR_GET_MEMBERS"],
       limit: 1000,
@@ -45,11 +46,12 @@ export async function fetchActiveMembers(
       console.error(`users.list error: ${response.error}`);
       return [];
     }
+    // シートへの書き込みは２次元配列が必要
     let activeMembers: string[][] = [];
-    // 検索を高速化するために Set に変換 ("U111" があるか？を即座に判定できる)
+    // 検索を高速化するために Set に変換する
     const channelMemberIds = new Set(response.members || []);
 
-    // 2. ワークスペースの全ユーザー情報を取得 (ここで display_name や is_bot が取れる)
+    // 2. ワークスペースの全ユーザー情報を取得
     const usersRes = await client.users.list({
       limit: 1000,
     });

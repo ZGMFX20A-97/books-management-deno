@@ -20,6 +20,7 @@ export const PurchaseRequestFunction = DefineFunction({
 export default SlackFunction(
   PurchaseRequestFunction,
   async ({ inputs, client }) => {
+    // モーダルを開く
     const response = await client.views.open({
       interactivity_pointer: inputs.interactivity.interactivity_pointer,
       view: purchaseRequestModal,
@@ -29,11 +30,13 @@ export default SlackFunction(
         `Failed to open a modal in the demo workflow. Contact the app maintainers with the following information - (error: ${response.error})`;
       return { error };
     }
+    // モーダルが開く状態を保持するため、completedはfalse
     return {
       completed: false,
     };
   },
 ).addViewSubmissionHandler("purchase_request_modal", async ({ body, view, env, client }) => {
+  // モーダルの入力値を取得
   const formData = extractFormValues(view.state.values);
   const bookTitle = formData.bookTitle_select;
   const publisher = formData.publisher_select;
@@ -45,6 +48,7 @@ export default SlackFunction(
   let msgBlocks;
 
   try {
+    // 購入申請を処理
     msgBlocks = await request(env, userName, publisher, bookTitle, price, purchaseMethod, url);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -61,6 +65,7 @@ export default SlackFunction(
     return { error: `Failed to post message: ${response.error}` };
   }
 
+  // 関数の完了を通知、通知しないとモーダルが閉じられない
   await client.functions.completeSuccess({
     function_execution_id: body.function_data.execution_id,
     outputs: {},
